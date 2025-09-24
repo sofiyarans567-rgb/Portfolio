@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Number Guessing Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin: 10px 0;
+      color: #333;
+    }
+    #game-box {
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: inline-block;
+      width: 90%;
+      max-width: 400px;
+    }
+    #guess-text {
+      font-size: 1.5em;
+      margin: 20px 0;
+    }
+    button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+    }
+    .start-btn { background: #28a745; }
+    .higher-btn { background: #007bff; }
+    .lower-btn { background: #ffc107; color: black; }
+    .correct-btn { background: #dc3545; }
+    .play-again-btn { background: #6f42c1; display: none; }
+    button:disabled {
+      background: #aaa !important;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 AI Number Guessing</h1>
+  <p>Think of a number between <b>1</b> and <b>100</b>.<br>The AI will guess it!</p>
+
+  <div id="game-box">
+    <h2 id="guess-text">Tap "Start" to begin!</h2>
+    <button onclick="startGame()" class="start-btn" id="btn-start">▶ Start</button>
+    <button onclick="higher()" id="btn-higher" class="higher-btn" disabled>⬆ Higher</button>
+    <button onclick="lower()" id="btn-lower" class="lower-btn" disabled>⬇ Lower</button>
+    <button onclick="correct()" id="btn-correct" class="correct-btn" disabled>✅ Correct</button>
+    <button onclick="resetGame()" id="btn-play-again" class="play-again-btn">🔄 Play Again</button>
+  </div>
+
+  <script>
+    let min, max, guess;
+
+    function startGame() {
+      min = 1;
+      max = 100;
+      guess = Math.floor((min + max) / 2);
+      document.getElementById("guess-text").innerText = "Is your number " + guess + "?";
+      enableButtons(true);
+      document.getElementById("btn-start").style.display = "none";
+      document.getElementById("btn-play-again").style.display = "none";
+    }
+
+    function higher() {
+      min = guess + 1;
+      makeGuess();
+    }
+
+    function lower() {
+      max = guess - 1;
+      makeGuess();
+    }
+
+    function correct() {
+      document.getElementById("guess-text").innerText = "🎉 The AI guessed your number: " + guess;
+      endGame();
+    }
+
+    function makeGuess() {
+      if (min > max) {
+        document.getElementById("guess-text").innerText = "😢 Did you change your number?";
+        endGame();
+        return;
+      }
+      guess = Math.floor((min + max) / 2);
+      document.getElementById("guess-text").innerText = "Is your number " + guess + "?";
+    }
+
+    function enableButtons(enable) {
+      document.getElementById("btn-higher").disabled = !enable;
+      document.getElementById("btn-lower").disabled = !enable;
+      document.getElementById("btn-correct").disabled = !enable;
+    }
+
+    function endGame() {
+      enableButtons(false);
+      document.getElementById("btn-play-again").style.display = "block";
+    }
+
+    function resetGame() {
+      document.getElementById("guess-text").innerText = "Tap \"Start\" to begin!";
+      enableButtons(false);
+      document.getElementById("btn-start").style.display = "block";
+      document.getElementById("btn-play-again").style.display = "none";
+    }
+  </script>
+</body>
+</https://github.com/sofiyarans567-rgb/Portfolio/blob/aefee71c236a4a7487fcbd04c2c6a9073ec4ebd9/ai_guessing_game.html                                         https://chatgpt.com/share/68c7e583-2da8-8007-bbe3-91f1e8d84983
