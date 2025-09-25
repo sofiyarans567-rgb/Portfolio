@@ -30,7 +30,7 @@
       font-size: 1.5em;
       margin: 20px 0;
     }
-    button {
+    button, a.link-btn {
       display: block;
       width: 100%;
       margin: 10px 0;
@@ -40,12 +40,15 @@
       border-radius: 10px;
       cursor: pointer;
       color: white;
+      text-decoration: none;
+      text-align: center;
     }
     .start-btn { background: #28a745; }
     .higher-btn { background: #007bff; }
     .lower-btn { background: #ffc107; color: black; }
     .correct-btn { background: #dc3545; }
     .play-again-btn { background: #6f42c1; display: none; }
+    .chat-link-btn { background: #17a2b8; }
     button:disabled {
       background: #aaa !important;
       cursor: not-allowed;
@@ -64,6 +67,9 @@
     <button onclick="correct()" id="btn-correct" class="correct-btn" disabled>✅ Correct</button>
     <button onclick="resetGame()" id="btn-play-again" class="play-again-btn">🔄 Play Again</button>
   </div>
+
+  <!-- Chat history link -->
+  <a href="https://chatgpt.com/share/68c7e583-2da8-8007-bbe3-91f1e8d84983" target="_blank" class="link-btn chat-link-btn">💬 View AI Chat History</a>
 
   <script>
     let min, max, guess;
@@ -115,12 +121,11 @@
     }
 
     function resetGame() {
-      document.getElementById("guess-text").innerText = "Tap \"Start\" to begin!";
+      document.getElementById("guess-text").innerText = "Tap \\"Start\\" to begin!";
       enableButtons(false);
       document.getElementById("btn-start").style.display = "block";
       document.getElementById("btn-play-again").style.display = "none";
     }
   </script>
 </body>
-</https://github.com/sofiyarans567-rgb/Portfolio/blob/aefee71c236a4a7487fcbd04c2c6a9073ec4ebd9/ai_guessing_game.html
-https://github.com/sofiyarans567-rgb/Portfolio/blob/ab0532e7ec301672ffd40f076bc6f08ca3f3efbd/text.txt
+</html>
