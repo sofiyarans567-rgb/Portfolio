@@ -3,62 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Guessing Game</title>
+  <title>AI Number Guessing Game</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background: #f4f4f4;
-      padding: 50px;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
     }
     h1 {
+      margin: 10px 0;
       color: #333;
     }
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      border: none;
-      border-radius: 8px;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
     #game-box {
-      margin-top: 30px;
+      margin-top: 20px;
       padding: 20px;
       background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       display: inline-block;
+      width: 90%;
+      max-width: 400px;
+    }
+    #guess-text {
+      font-size: 1.4em;
+      margin: 15px 0;
+    }
+    #range-text, #counter-text {
+      font-size: 1em;
+      margin: 8px 0;
+      color: #666;
+    }
+    button, select {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button {
+      color: white;
+    }
+    .start-btn { background: #28a745; }
+    .higher-btn { background: #007bff; }
+    .lower-btn { background: #ffc107; color: black; }
+    .correct-btn { background: #dc3545; }
+    .play-again-btn { background: #6f42c1; display: none; }
+    select {
+      background: #fff;
+      border: 2px solid #28a745;
+      color: #333;
+    }
+    button:disabled {
+      background: #aaa !important;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-  <h1>🤖 AI Guessing Game</h1>
-  <p>Think of a number between <b>1</b> and <b>100</b>. The AI will try to guess it!</p>
+  <h1>🤖 AI Number Guessing</h1>
+  <p>Think of a number. The AI will try to guess it!</p>
 
   <div id="game-box">
-    <h2 id="guess-text">Click "Start" to begin!</h2>
-    <button onclick="startGame()">Start</button>
-    <br>
-    <button onclick="higher()" id="btn-higher" disabled>Higher</button>
-    <button onclick="lower()" id="btn-lower" disabled>Lower</button>
-    <button onclick="correct()" id="btn-correct" disabled>Correct</button>
+    <label for="difficulty">Choose difficulty:</label>
+    <select id="difficulty">
+      <option value="50">Easy (1–50)</option>
+      <option value="100" selected>Medium (1–100)</option>
+      <option value="500">Hard (1–500)</option>
+    </select>
+
+    <h2 id="guess-text">Tap "Start" to begin!</h2>
+    <p id="range-text"></p>
+    <p id="counter-text"></p>
+
+    <button onclick="startGame()" class="start-btn" id="btn-start">▶ Start</button>
+    <button onclick="higher()" id="btn-higher" class="higher-btn" disabled>⬆ Higher</button>
+    <button onclick="lower()" id="btn-lower" class="lower-btn" disabled>⬇ Lower</button>
+    <button onclick="correct()" id="btn-correct" class="correct-btn" disabled>✅ Correct</button>
+    <button onclick="resetGame()" id="btn-play-again" class="play-again-btn">🔄 Play Again</button>
   </div>
 
   <script>
-    let min, max, guess;
+    let min, max, guess, counter;
 
     function startGame() {
+      let difficulty = parseInt(document.getElementById("difficulty").value);
       min = 1;
-      max = 100;
-      guess = Math.floor((min + max) / 2);
-      document.getElementById("guess-text").innerText = "Is your number " + guess + "?";
+      max = difficulty;
+      counter = 0;
+      makeGuess();
       enableButtons(true);
+      document.getElementById("btn-start").style.display = "none";
+      document.getElementById("btn-play-again").style.display = "none";
     }
 
     function higher() {
@@ -72,24 +112,50 @@
     }
 
     function correct() {
-      document.getElementById("guess-text").innerText = "🎉 Yay! The AI guessed your number: " + guess;
-      enableButtons(false);
+      document.getElementById("guess-text").innerText =
+        "🎉 Yay! I guessed it: " + guess + " in " + counter + " tries!";
+      endGame();
     }
 
     function makeGuess() {
       if (min > max) {
-        document.getElementById("guess-text").innerText = "😢 Something went wrong! Did you change your number?";
-        enableButtons(false);
+        document.getElementById("guess-text").innerText =
+          "😢 Hey, something's fishy... Did you change your number?";
+        endGame();
         return;
       }
       guess = Math.floor((min + max) / 2);
-      document.getElementById("guess-text").innerText = "Is your number " + guess + "?";
+      counter++;
+      let messages = [
+        "Hmm... is it " + guess + "?",
+        "I’m feeling lucky... " + guess + "?",
+        "Could it be " + guess + "?",
+        "I bet it’s " + guess + "!"
+      ];
+      let randomMsg = messages[Math.floor(Math.random() * messages.length)];
+      document.getElementById("guess-text").innerText = randomMsg;
+      document.getElementById("range-text").innerText = "Range: " + min + " – " + max;
+      document.getElementById("counter-text").innerText = "Guesses so far: " + counter;
     }
 
     function enableButtons(enable) {
       document.getElementById("btn-higher").disabled = !enable;
       document.getElementById("btn-lower").disabled = !enable;
       document.getElementById("btn-correct").disabled = !enable;
+    }
+
+    function endGame() {
+      enableButtons(false);
+      document.getElementById("btn-play-again").style.display = "block";
+    }
+
+    function resetGame() {
+      document.getElementById("guess-text").innerText = "Tap 'Start' to begin!";
+      document.getElementById("range-text").innerText = "";
+      document.getElementById("counter-text").innerText = "";
+      enableButtons(false);
+      document.getElementById("btn-start").style.display = "block";
+      document.getElementById("btn-play-again").style.display = "none";
     }
   </script>
 </body>
