@@ -29,6 +29,7 @@
     #guess-text {
       font-size: 1.5em;
       margin: 20px 0;
+      min-height: 50px;
     }
     button, a.link-btn {
       display: block;
@@ -42,6 +43,7 @@
       color: white;
       text-decoration: none;
       text-align: center;
+      transition: opacity 0.2s;
     }
     .start-btn { background: #28a745; }
     .higher-btn { background: #007bff; }
@@ -50,7 +52,7 @@
     .play-again-btn { background: #6f42c1; display: none; }
     .chat-link-btn { background: #17a2b8; }
     button:disabled {
-      background: #aaa !important;
+      opacity: 0.6;
       cursor: not-allowed;
     }
   </style>
@@ -69,14 +71,16 @@
   </div>
 
   <!-- Chat history link -->
-  <a href="https://chatgpt.com/share/68c7e583-2da8-8007-bbe3-91f1e8d84983" target="_blank" class="link-btn chat-link-btn">💬 View AI Chat History</a>
+  <a href="https://chatgpt.com/share/68c7e583-2da8-8007-bbe3-91f1e8d84983" 
+     target="_blank" class="link-btn chat-link-btn">💬 View AI Chat History</a>
 
   <script>
-    let min, max, guess;
+    let min, max, guess, tries;
 
     function startGame() {
       min = 1;
       max = 100;
+      tries = 1;
       guess = Math.floor((min + max) / 2);
       document.getElementById("guess-text").innerText = "Is your number " + guess + "?";
       enableButtons(true);
@@ -86,22 +90,26 @@
 
     function higher() {
       min = guess + 1;
+      tries++;
       makeGuess();
     }
 
     function lower() {
       max = guess - 1;
+      tries++;
       makeGuess();
     }
 
     function correct() {
-      document.getElementById("guess-text").innerText = "🎉 The AI guessed your number: " + guess;
+      document.getElementById("guess-text").innerText =
+        "🎉 The AI guessed your number: " + guess + " in " + tries + " tries!";
       endGame();
     }
 
     function makeGuess() {
       if (min > max) {
-        document.getElementById("guess-text").innerText = "😢 Did you change your number?";
+        document.getElementById("guess-text").innerText =
+          "😢 Did you change your number? (No valid guesses left)";
         endGame();
         return;
       }
@@ -121,7 +129,7 @@
     }
 
     function resetGame() {
-      document.getElementById("guess-text").innerText = "Tap \\"Start\\" to begin!";
+      document.getElementById("guess-text").innerText = 'Tap "Start" to begin!';
       enableButtons(false);
       document.getElementById("btn-start").style.display = "block";
       document.getElementById("btn-play-again").style.display = "none";
@@ -129,3 +137,4 @@
   </script>
 </body>
 </html>
+
