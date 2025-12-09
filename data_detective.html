@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>DD Clues CSV Analyzer</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { border: 1px solid #ccc; padding: 4px; }
+  th { background: #eee; }
+  .section { margin-bottom: 30px; }
+  .box { border: 1px solid #aaa; padding: 10px; border-radius: 6px; margin-top: 10px; }
+  .charts { display: flex; gap: 20px; flex-wrap: wrap; }
+  canvas { background: #fafafa; border: 1px solid #ccc; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <a href="https://chatgpt.com/share/693778b1-d3d0-8007-abd9-edd729883813" target="_blank" style="display:inline-block;margin:10px;padding:10px 15px;background:#4F46E5;color:white;border-radius:8px;text-decoration:none;font-weight:bold;">Open Chat History</a>
+<h1>DD Clues – CSV Analyzer (HTML Version)</h1>
+
+<!-- File upload -->
+<div class="section">
+  <h2>1. Upload CSV</h2>
+  <input type="file" id="csvFile" accept=".csv" />
+  <p id="fileInfo"></p>
+</div>
+
+<!-- Preview -->
+<div class="section">
+  <h2>2. Data Preview</h2>
+  <label>Rows to preview: <input type="number" id="previewCount" value="50" /></label>
+  <button onclick="renderPreview()">Refresh Preview</button>
+  <div class="box"><table id="previewTable"></table></div>
+</div>
+
+<!-- Descriptive stats -->
+<div class="section">
+  <h2>3. Descriptive Statistics</h2>
+  <div id="statsBox" class="box"></div>
+</div>
+
+<!-- Unique counts -->
+<div class="section">
+  <h2>4. Unique Counts (Categorical)</h2>
+  <div id="uniqueBox" class="box"></div>
+</div>
+
+<!-- Anomaly detection -->
+<div class="section">
+  <h2>5. Detect Anomalies</h2>
+  <button onclick="detectAnomalies()">Run Anomaly Detection</button>
+  <button onclick="exportAnomalies()">Export Anomalies CSV</button>
+  <div id="anomBox" class="box"></div>
+</div>
+
+<!-- Filtering -->
+<div class="section">
+  <h2>6. Filtering</h2>
+  <div class="box">
+    <label>Column: <select id="filterCol"></select></label>
+    <label>Condition:
+      <select id="filterOp">
+        <option value="eq">Equals</option>
+        <option value="contains">Contains</option>
+        <option value="gt">&gt;</option>
+        <option value="lt">&lt;</option>
+      </select>
+    </label>
+    <label>Value: <input id="filterVal" /></label>
+    <button onclick="applyFilter()">Apply Filter</button>
+    <button onclick="exportFiltered()">Export Filtered CSV</button>
+
+    <div id="filterInfo" style="margin-top:10px;font-size:13px;color:#555"></div>
+  </div>
+</div>
+
+<!-- Group By -->
+<div class="section">
+  <h2>7. Group By & Aggregate</h2>
+  <div class="box">
+    <label>Group by: <select id="groupCol"></select></label>
+    <label>Aggregation:
+      <select id="aggFunc">
+        <option value="count">Count</option>
+        <option value="sum">Sum (first numeric col)</option>
+        <option value="avg">Avg (first numeric col)</option>
+      </select>
+    </label>
+    <button onclick="runGroup()">Run</button>
+    <button onclick="exportGroup()">Export Grouped CSV</button>
+    <div id="groupBox" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- Date / Time -->
+<div class="section">
+  <h2>8. Date/Time Analysis</h2>
+  <div class="box">
+    <label>Date column: <select id="dateCol"></select></label>
+    <label>Granularity:
+      <select id="dateGran">
+        <option value="day">Day</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+    </label>
+    <button onclick="renderDateTrend()">Show Trend</button>
+    <div style="margin-top:20px"><canvas id="trendChart" width="600" height="300"></canvas></div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="section">
+  <h2>9. Visualizations</h2>
+  <div class="charts">
+    <div>
+      <h3>Group By Bar</h3>
+      <canvas id="groupChart" width="400" height="300"></canvas>
+    </div>
+    <div>
+      <h3>Histogram (Numeric Column)</h3>
+      <select id="histCol"></select>
+      <button onclick="drawHistogram()">Draw</button>
+      <canvas id="histogram" width="400" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+let rawData = [];
+let csvColumns = [];
+let numericCols = [];
+let anomalies = [];
+let filtered = [];
+let grouped = [];
+
+// Load CSV
+csvFile.onchange = function () {
+  Papa.parse(csvFile.files[0], {
+    header: true,
+    dynamicTyping: false,
+    skipEmptyLines: true,
+    complete: (res) => {
+      rawData = res.data;
+      csvColumns = res.meta.fields;
+      numericCols = csvColumns.filter(c => rawData.every(r => !r[c] || !isNaN(Number(r[c]))));
+
+      fileInfo.innerHTML = `Loaded ${rawData.length} rows.`;
+
+      fillSelects();
+      renderPreview();
+      renderStats();
+      renderUnique();
+    }
+  });
+};
+
+function fillSelects() {
+  [filterCol, groupCol, dateCol, histCol].forEach(sel => {
+    sel.innerHTML = csvColumns.map(c => `<option>${c}</option>`).join('');
+  });
+}
+
+// Preview
+function renderPreview() {
+  const n = Number(previewCount.value);
+  const rows = rawData.slice(0, n);
+  let html = '<tr>' + csvColumns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  rows.forEach(r => {
+    html += '<tr>' + csvColumns.map(c => `<td>${r[c] ?? ''}</td>`).join('') + '</tr>';
+  });
+  previewTable.innerHTML = html;
+}
+
+// Stats
+function renderStats() {
+  let out = '';
+  numericCols.forEach(col => {
+    const vals = rawData.map(r => Number(r[col])).filter(v => !isNaN(v));
+    if (!vals.length) return;
+    const mean = vals.reduce((a,b)=>a+b,0) / vals.length;
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    out += `<p><b>${col}</b>: n=${vals.length}, mean=${mean.toFixed(3)}, min=${min}, max=${max}</p>`;
+  });
+  statsBox.innerHTML = out;
+}
+
+// Unique
+function renderUnique() {
+  let out = '';
+  csvColumns.forEach(col => {
+    const vals = rawData.map(r => r[col] ?? '(null)');
+    const set = new Set(vals);
+    out += `<p><b>${col}</b>: ${set.size} distinct values</p>`;
+  });
+  uniqueBox.innerHTML = out;
+}
+
+// Anomalies
+function detectAnomalies() {
+  anomalies = [];
+  numericCols.forEach(col => {
+    const vals = rawData.map(r => Number(r[col])).filter(v => !isNaN(v));
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const std = Math.sqrt(vals.reduce((s,x)=>s+(x-mean)**2,0)/vals.length);
+
+    rawData.forEach((r,i)=>{
+      const v = Number(r[col]);
+      if (!isNaN(v)){
+        const z = Math.abs((v-mean)/std);
+        if (z > 3) anomalies.push({row:i, col, value:v});
+      }
+    });
+  });
+  renderAnomalies();
+}
+
+function renderAnomalies(){
+  anomBox.innerHTML = anomalies.slice(0,50).map(a=>`Row ${a.row}, Col ${a.col}: ${a.value}`).join('<br>') || 'No anomalies';
+}
+
+function exportAnomalies(){
+  if(!anomalies.length){ alert('None'); return; }
+  const rows = anomalies.map(a => ({...rawData[a.row], _col:a.col, _value:a.value}));
+  downloadCSV(rows, 'anomalies.csv');
+}
+
+// Filtering
+function applyFilter(){
+  const col = filterCol.value;
+  const op = filterOp.value;
+  const val = filterVal.value;
+
+  filtered = rawData.filter(r=>{
+    const v = r[col] ?? '';
+    if(op==='eq') return String(v)===val;
+    if(op==='contains') return String(v).includes(val);
+    if(op==='gt') return Number(v)>Number(val);
+    if(op==='lt') return Number(v)<Number(val);
+    return true;
+  });
+
+  filterInfo.innerHTML = `${filtered.length} rows match.`;
+}
+
+function exportFiltered(){ downloadCSV(filtered, 'filtered.csv'); }
+
+// Group by
+function runGroup(){
+  const col = groupCol.value;
+  const func = aggFunc.value;
+  const numCol = numericCols[0];
+
+  const groups = {};
+  rawData.forEach(r=>{
+    const key = r[col] ?? '(null)';
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
+
+  grouped = Object.entries(groups).map(([k,rows])=>{
+    let val = 0;
+    if(func==='count') val = rows.length;
+    if(func==='sum') val = rows.reduce((s,r)=>s+Number(r[numCol]||0),0);
+    if(func==='avg') val = rows.reduce((s,r)=>s+Number(r[numCol]||0),0)/rows.length;
+    return {group:k, value:val};
+  });
+
+  renderGroupTable();
+  drawGroupChart();
+}
+
+function renderGroupTable(){
+  groupBox.innerHTML = '<table><tr><th>Group</th><th>Value</th></tr>' +
+    grouped.map(g=>`<tr><td>${g.group}</td><td>${g.value}</td></tr>`).join('') + '</table>';
+}
+
+function exportGroup(){ downloadCSV(grouped, 'grouped.csv'); }
+
+// Date Trend
+let trendChart;
+function renderDateTrend(){
+  const col = dateCol.value;
+  const gran = dateGran.value;
+  const map = {};
+
+  rawData.forEach(r=>{
+    const d = new Date(r[col]);
+    if(isNaN(d)) return;
+    let key;
+    if(gran==='day') key = d.toISOString().slice(0,10);
+    if(gran==='month') key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(gran==='year') key = `${d.getFullYear()}`;
+    map[key] = (map[key]||0) + 1;
+  });
+
+  const labels = Object.keys(map).sort();
+  const values = labels.map(k=>map[k]);
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'),{
+    type:'line',
+    data:{ labels, datasets:[{ label:'Count', data:values }] }
+  });
+}
+
+// Histogram
+let histChart;
+function drawHistogram(){
+  const col = histCol.value;
+  const vals = rawData.map(r=>Number(r[col])).filter(v=>!isNaN(v));
+  vals.sort((a,b)=>a-b);
+
+  const bins = 10;
+  const min = vals[0], max = vals[vals.length-1];
+  const width = (max-min)/bins;
+  const counts = Array(bins).fill(0);
+
+  vals.forEach(v=>{
+    let idx = Math.floor((v-min)/width);
+    if(idx>=bins) idx=bins-1;
+    counts[idx]++;
+  });
+
+  const labels = Array.from({length:bins},(_,i)=>`${(min+i*width).toFixed(1)}–${(min+(i+1)*width).toFixed(1)}`);
+
+  if(histChart) histChart.destroy();
+  histChart = new Chart(document.getElementById('histogram'),{
+    type:'bar', data:{labels, datasets:[{label:col, data:counts}]}
+  });
+}
+
+// CSV Export Helper
+function downloadCSV(rows, filename){
+  const csv = Papa.unparse(rows);
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
